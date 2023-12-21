@@ -23,8 +23,9 @@ decorator==5.1.1
 django==3.2.23
     # via
     #   -r requirements.in
+    #   django-crispy-forms
     #   django-debug-toolbar
-django-crispy-forms==1.14.0
+django-crispy-forms==2.0
     # via -r requirements.in
 django-debug-toolbar==4.2.0
     # via -r requirements.in
