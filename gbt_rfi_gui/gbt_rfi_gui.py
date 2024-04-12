@@ -41,15 +41,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.receivers.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         # recievers need to be in a sorted list
         rcvrs = [
-            "Prime Focus 1",
-            "L-band",
-            "S-band",
-            "C-band",
-            "X-band",
-            "Ku-band",
-            "K-band FPA",
-            "Ka-band",
-            "Q-band",
+            "CHIME"
         ]
         self.receivers.addItems(rcvrs)
 
@@ -156,7 +148,7 @@ class Window(QMainWindow, Ui_MainWindow):
             )
             # color map graph, but only if there is more than one day with data
             unique_days = data.scan__datetime.unique()
-            self.make_color_plot(data, unique_days, receivers, end_date, start_date)
+            #self.make_color_plot(data, unique_days, receivers, end_date, start_date)
 
             # option to save the data from the plot
             if self.saveData.isChecked():
@@ -190,6 +182,7 @@ class Window(QMainWindow, Ui_MainWindow):
             Receiver : {receivers} \n \
             Date range : From {start_date.date()} to {end_date.date()} \n \
             Frequency Range : {mean_data['frequency'].min()}MHz to {mean_data['frequency'].max()}MHz "
+        print(mean_data.shape)
 
         # print out info for investagative GBO scientists
         print("Your requested projects are below:")
@@ -207,10 +200,10 @@ class Window(QMainWindow, Ui_MainWindow):
         # Create the 2D line plot
         fig, ax = plt.subplots(1, figsize=(9, 4))
         plt.title(txt, fontsize=8)
-        plt.suptitle("Averaged RFI Environment at Green Bank Observatory")
+        plt.suptitle("Averaged CHIME RFI Environment at Green Bank Observatory")
         plt.xlabel("Frequency (MHz)")
         plt.ylabel("Average Intensity (Jy)")
-        plt.ylim(-10, 500)
+        #plt.ylim(-10, 500)
         plt.xlim(start_frequency, end_frequency)
 
         # Create the annotations for RFI, only plot if user selects
@@ -369,7 +362,7 @@ class Window(QMainWindow, Ui_MainWindow):
         fig.text(0.5, 0.04, "Frequency (MHz)", ha="center")
         fig.text(0.01, 0.5, "Session Dates (UTC)", va="center", rotation="vertical")
         cbar.set_label("log(flux) [Jy]")
-        plt.suptitle("RFI Environment at Green Bank Observatory per Session")
+        plt.suptitle("CHIME RFI Environment at Green Bank Observatory per Session")
 
         # settign the location of the window
         mngr = plt.get_current_fig_manager()
@@ -424,15 +417,7 @@ class Window(QMainWindow, Ui_MainWindow):
         self.plot_button.repaint()
 
         rcvrs_dict = {
-            "Prime Focus 1": "Prime Focus 1",
-            "L-band": "Rcvr1_2",
-            "S-band": "Rcvr2_3",
-            "C-band": "Rcvr4_6",
-            "X-band": "Rcvr8_10",
-            "Ku-band": "Rcvr12_18",
-            "K-band FPA": "RcvrArray18_26",
-            "Ka-band": "Rcvr26_40",
-            "Q-band": "Rcvr40_52",
+            "CHIME": "CHIME",
         }
 
         receivers_band = [i.text() for i in self.receivers.selectedItems()]
@@ -442,7 +427,7 @@ class Window(QMainWindow, Ui_MainWindow):
 
         # account for the user not selecting a rcvr
         if len(receivers) == 0:
-            receivers = ["Prime Focus 1"]
+            receivers = ["CHIME"]
 
         end_date = self.end_date.dateTime().toPyDateTime().replace(tzinfo=pytz.UTC)
         start_date = self.start_date.dateTime().toPyDateTime().replace(tzinfo=pytz.UTC)
