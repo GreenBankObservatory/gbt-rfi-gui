@@ -132,6 +132,9 @@ class Window(QMainWindow, Ui_MainWindow):
             qs.values("frequency", "intensity", "scan__datetime", "scan__session__name")
         )
 
+        # change Hz to MHz
+        data.loc[:,"frequency"] = data["frequency"] / 1000000 
+
         if not start_frequency:
             start_frequency = data["frequency"].min()
         if not end_frequency:
@@ -148,7 +151,7 @@ class Window(QMainWindow, Ui_MainWindow):
             )
             # color map graph, but only if there is more than one day with data
             unique_days = data.scan__datetime.unique()
-            #self.make_color_plot(data, unique_days, receivers, end_date, start_date)
+            self.make_color_plot(data, unique_days, receivers, end_date, start_date)
 
             # option to save the data from the plot
             if self.saveData.isChecked():
@@ -175,14 +178,13 @@ class Window(QMainWindow, Ui_MainWindow):
         mean_data = mean_data_intens.reset_index()
         # sort values so the plot looks better, this has nothing to do with the actual data
         sorted_mean_data = mean_data.sort_values(by=["frequency", "intensity_mean"])
-
+        
         # generate the description fro the plot
         txt = f" \
             Your data summary for this plot: \n \
             Receiver : {receivers} \n \
             Date range : From {start_date.date()} to {end_date.date()} \n \
             Frequency Range : {mean_data['frequency'].min()}MHz to {mean_data['frequency'].max()}MHz "
-        print(mean_data.shape)
 
         # print out info for investagative GBO scientists
         print("Your requested projects are below:")
@@ -278,7 +280,7 @@ class Window(QMainWindow, Ui_MainWindow):
         if number_of_subplots == 1:
             axes = [axes]
 
-        # generate the description fro the plot
+        # generate the description for the plot
         txt = f" \
             Your data summary for this plot: \n \
             Receiver : {receivers} \n \
@@ -311,7 +313,7 @@ class Window(QMainWindow, Ui_MainWindow):
             dates = date_bins[:-1] + 0.5 * np.diff(date_bins)
             # Convert from datetime so imshow recignizes the extent format
             date_extents = mdates.date2num(dates)
-
+            
             # make the freq bins for plotting
             freq_bins = np.arange(
                 unique_date_range["frequency"].min(),
@@ -325,7 +327,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 [
                     pd.cut(unique_date_range.scan__datetime, date_bins),
                     pd.cut(unique_date_range.frequency, freq_bins),
-                ]
+                ], observed=True
             )
 
             timeseries_rfi = df_rfi_grouped2.max().intensity

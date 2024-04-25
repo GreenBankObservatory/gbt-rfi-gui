@@ -4,13 +4,16 @@ import glob
 import numpy as np
 import sys
 import astropy.units as u
-from datetime import timezone, timedelta
+from datetime import timezone, timedelta, datetime
 from pathlib import Path
 from tqdm import tqdm
+import pandas as pd
+
 
 from django.core.management.base import BaseCommand
 
 from rfi.models import Frequency, Scan, Frontend, Backend, Coordinates, Source, Feed, FrequencyType, Polarization, Project, File, Session
+
 
 class Command(BaseCommand):
     help = "Ingest data from CHIME data files into the 'CHIME' RFI DB"
@@ -73,8 +76,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--full",
             action="store_true",
-            help="To do a full re-ingestion, use this option. "
-            "You will get integrity errors if you use this on a non-empty rfi_query DB",
+            help="To do a full re-ingestion, use this option. You will get integrity errors if you use this on a non-empty rfi_query DB"
         )
         parser.add_argument(
             "--rfi-data-path",
@@ -83,27 +85,22 @@ class Command(BaseCommand):
             default="/home/scratch/dbautist/CHIME_backup",
         )
 
-    def handle_session(self, intensities, start, end, session):
+    def handle_session(self, data, session):
         """
         Convert the numpy data to DB objects, per session
         """
 
-        # min/max'ed freq. linspace
-        frequency = np.linspace(400e6, 800e6, num=1024)*u.Hz
-        frequency = frequency.to(u.MHz).value
+        frequencies = data["frequency"]
+        intensities = data["intensity"]
+        formatted_datetime = data["datetime"][0][:29] + data["datetime"][0][30:]
+        time_stamp = datetime.strptime(formatted_datetime, '%Y-%m-%d %H:%M:%S.%f%z')
 
-        # min/max'ed time range
-        start_time = start[()].astimezone(timezone.utc)
-        end_time = end[()].astimezone(timezone.utc)
-        dt = (end_time - start_time).seconds / intensities.shape[0]
-        timestamps = [start_time + timedelta(seconds=dt*i) for i in range(len(intensities))]
         all_scan_to_create: list[Scan] = []
         all_frequencies_to_create: list[Frequency] = []
-        for scan_num,[ts, intensity] in tqdm(list(enumerate(zip(timestamps, intensities), 1))):
-            scan_to_create, frequencies_to_create = self.handle_scan(intensity, ts, frequency, session, scan_num)
-            
-            all_scan_to_create.append(scan_to_create)
-            all_frequencies_to_create.extend(frequencies_to_create) 
+        scan_to_create, frequencies_to_create = self.handle_scan(intensities, time_stamp, frequencies, session, 1)
+        
+        all_scan_to_create.append(scan_to_create)
+        all_frequencies_to_create.extend(frequencies_to_create) 
 
 
         scans_created = Scan.objects.bulk_create(all_scan_to_create, batch_size=20_000)
@@ -135,12 +132,9 @@ class Command(BaseCommand):
         # gather data
         # for i in range(len(new_sessions)):
         for session_path in tqdm(new_sessions):
-            new_files = sorted(str(sp) for sp in Path(session_path).glob("*.npy"))
-            # new_files = glob.glob(session_path+"/*npy")
+            files_in_dir = glob.glob(str(session_path)+"/*.csv")
+            for session_file in files_in_dir:
+                new_frame = pd.read_csv(session_file)
 
-            start_data = np.load(new_files[2], allow_pickle=True)
-            end_data = np.load(new_files[1], allow_pickle=True)
-            CHIME_data = np.load(new_files[0], allow_pickle=True)
-
-            # per session ingest
-            self.handle_session(intensities=CHIME_data, start=start_data, end=end_data, session=str(session_path))
+                # per session ingest
+                self.handle_session(data=new_frame, session=str(session_path))
