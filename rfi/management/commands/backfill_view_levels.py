@@ -5,7 +5,10 @@ import pandas as pd
 from scipy.signal import find_peaks
 
 
-from rfi.models import Frequency, Scan
+from rfi.models import (
+	Frequency
+)
+
 
 class Command(BaseCommand):
 	help = ""
@@ -14,29 +17,27 @@ class Command(BaseCommand):
 
 	def add_arguments(self,parser):
 		parser.add_argument(
-			"receiver", nargs="*", help="The sessions for which to apply the backfill. If blank, backfill all"
+			"sessions", nargs="*", help="The sessions for which to apply the backfill. If blank, backfill all"
 			)
 
 		parser.add_argument(
-		s	"--reset", action="store_true", help="Set all Frequency rows to is_peak=False before finding peaks. For dev only"
+			"--reset", action="store_true", help="Set all Frequency rows to is_peak=False before finding peaks. For dev only"
 			)
 
 
-	def handle(self, receiver, reset: bool, *args, **options):
+	def handle(self, sessions, reset: bool, *args, **options):
 
 
 
 	    qs = Frequency.objects.all()
 
-	    if(receiver):
+	    if(sessions):
 	    	
-	    	#qs = qs.filter(scan__session__name__in=reciever)
+	    	qs = qs.filter(scan__session__name__in=sessions)
 
-	    
-	    	qs = qs.filter(scan__frontend__name__in=receiver)
 	    	
-    		#if len(qs.values_list("scan__session__name",flat=True).distinct()) != len(set(sessions)):
-    		#	raise ValueError("either dup sessions or not found in db")
+    		if len(qs.values_list("scan__session__name",flat=True).distinct()) != len(set(sessions)):
+    			raise ValueError("either dup sessions or not found in db")
 
 	    if reset:
 	    	qs.update(view_level_0=False)
@@ -47,18 +48,52 @@ class Command(BaseCommand):
 
 	    data = pd.DataFrame(
 	        qs.values("id","frequency", "intensity", "scan__session__name")
-	        )
-	    
+	    )
 
-	    
-	    sessions = data["scan__session__name"].unique()
+	    Frequency.objects.filter(id__in=view_level_0["id"])
 
-	    print(sessions)
+	    stuff= Frequency()._meta
 
-	    for session in sessions:
-	    	self.run_filtering(session, data, qs)
+	    fields = stuff.get_fields()
+
+	    # Extract and print the names of the fields
+	    field_names = [field.name for field in fields]
+	    print(field_names)
+
+	    all_false = not Frequency.objects.filter(view_level_0=True).exists()
+	    print(all_false)
+
+	    if all_false:
+		    view_level_0 = self.data_filter(1400, data)
+
+		    updated_count = Frequency.objects.filter(id__in=view_level_0["id"]).update(view_level_0=True)
+
+		    print("level 0")
+		    print(qs.filter(view_level_0=True).count())
+
+		    data_len = qs.count()
+		               
+
+		    #0.1% of the data
+		    view_level_1 = self.data_filter(data_len*0.009, data)
+
+		    updated_count = Frequency.objects.filter(id__in=view_level_1["id"]).update(view_level_1=True)
+
+		    print("level 1")
+		    print(qs.filter(view_level_1=True).count())
 
 
+		    #5% of data
+		    view_level_2 = self.data_filter(data_len*0.04, data)
+		    updated_count = Frequency.objects.filter(id__in=view_level_2["id"]).update(view_level_2=True)
+		    print("level 2")
+		    print(qs.filter(view_level_2=True).count())
+
+
+		    view_level_3 = self.data_filter(data_len*0.10, data)
+		    updated_count = Frequency.objects.filter(id__in=view_level_3["id"]).update(view_level_3=True)
+		    print("level 3")
+		    print(qs.filter(view_level_3=True).count())
 
 	    #if len(view_level_0) != updated_count:
 	    #	raise AssertionError(f"{len(freq_index)} != {updated_count}")
@@ -66,75 +101,43 @@ class Command(BaseCommand):
 
 	    #print(f"Updated {updated_count} records")
 
-	def run_filtering(self, session, data, qs):
-		print("running session: " + session)
-		data = data[data["scan__session__name"]==str(session)]
-
-		view_level_0 = self.data_filter(1400, data)
-
-		updated_count = Frequency.objects.filter(id__in=view_level_0["id"]).update(view_level_0=True)
-
-		print("level 0")
-		print(qs.filter(view_level_0=True).count())
-
-		data_len = len(data)
-		           
-
-		#0.1% of the data
-		view_level_1 = self.data_filter(data_len*0.009, data)
-
-		updated_count = Frequency.objects.filter(id__in=view_level_1["id"]).update(view_level_1=True)
-
-		print("level 1")
-		print(qs.filter(view_level_1=True).count())
-
-
-		#5% of data
-		view_level_2 = self.data_filter(data_len*0.04, data)
-		updated_count = Frequency.objects.filter(id__in=view_level_2["id"]).update(view_level_2=True)
-		print("level 2")
-		print(qs.filter(view_level_2=True).count())
-
-
-		view_level_3 = self.data_filter(data_len*0.10, data)
-		updated_count = Frequency.objects.filter(id__in=view_level_3["id"]).update(view_level_3=True)
-		print("level 3")
-		print(qs.filter(view_level_3=True).count())
+	    
 
 	def data_filter(self, points, data):
 
-		# Specifies a threshold of useful points
-		intensity_threshold = np.median(data["intensity"]) * 5
+	    # Specifies a threshold of useful points
+	    intensity_threshold = np.median(data["intensity"]) * 5
 
-		"""
-		conversions needed for the plot every other point commands below
-		"""
-		windowsize = 1080
-		total_points = len(data["intensity"])
+	    """
+	    conversions needed for the plot every other point commands below
+	    """
+	    windowsize = 1080
+	    total_points = len(data["intensity"])
 
-		points_per_pxl = total_points / windowsize
+	    points_per_pxl = total_points / windowsize
 
-		asigned_pt_per_pxl = points / windowsize
+	    asigned_pt_per_pxl = points / windowsize
 
-		# every what point to reach a point density asigned
-		every_point = int(points_per_pxl / asigned_pt_per_pxl)
+	    # every what point to reach a point density asigned
+	    every_point = int(points_per_pxl / asigned_pt_per_pxl)
 
-		# selects the points with the highest intensity within a specified range and intensity
-		peaks, _ = find_peaks(
-		    data["intensity"], height=intensity_threshold, distance=every_point
-		)
+	    # selects the points with the highest intensity within a specified range and intensity
+	    peaks, _ = find_peaks(
+	        data["intensity"], height=intensity_threshold, distance=every_point
+	    )
 
-		peaks_data = data.iloc[peaks]
+	    peaks_data = data.iloc[peaks]
 
-		# creates the simplified dataset (This keeps the graph from losing the zero markers)
-		low_res_data = data.iloc[::every_point]
+	    # creates the simplified dataset (This keeps the graph from losing the zero markers)
+	    low_res_data = data.iloc[::every_point]
 
-		# adds the high resolution peaks to the simplified dataset and sorts them
-		filtered_data = pd.concat([peaks_data, low_res_data]).sort_values(
-		    by="frequency"
-		)
+	    # adds the high resolution peaks to the simplified dataset and sorts them
+	    filtered_data = pd.concat([peaks_data, low_res_data]).sort_values(
+	        by="frequency"
+	    )
 
-		#Print(len(filtered_data))
+	    #Print(len(filtered_data))
 
-		return filtered_data
+	    return filtered_data
+
 

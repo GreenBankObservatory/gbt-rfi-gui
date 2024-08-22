@@ -55,6 +55,14 @@ class Window(QMainWindow, Ui_MainWindow):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
 
+    stuff= Frequency()._meta
+
+    fields = stuff.get_fields()
+
+    # Extract and print the names of the fields
+    field_names = [field.name for field in fields]
+    print(field_names)
+
 
         # Set up the UI file
     """
@@ -128,7 +136,6 @@ class Window(QMainWindow, Ui_MainWindow):
             start_frequency = data["frequency"].min()
 
             end_frequency = data["frequency"].max()
-
             print("--- %s Data pulling: ---" % (time.time() - start_time))
 
 
@@ -147,7 +154,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 )
                 # color map graph, but only if there is more than one day with data
                 unique_days = data.scan__datetime.unique()
-                #self.make_color_plot(data, unique_days, receivers, end_date, start_date)
+                self.make_color_plot(data, unique_days, receivers, end_date, start_date)
 
                 # option to save the data from the plot
                 #if self.saveData.isChecked():
@@ -188,10 +195,12 @@ class Window(QMainWindow, Ui_MainWindow):
         elif zoomed:
             sorted_data = sorted_mean_data[(
                 sorted_mean_data['frequency'] >= start_frequency) 
-                & (sorted_mean_data['frequency'] <= end_frequency)]            
+                & (sorted_mean_data['frequency'] <= end_frequency)]
+
+
     
        
-       if not zoomed:
+        if zoomed:
             #Specify an threshold of useful points 
             intensity_threshold =  np.median(sorted_mean_data['intensity_mean'])*100
             print("Threshold: " + str(intensity_threshold) + "Jy")
@@ -212,7 +221,7 @@ class Window(QMainWindow, Ui_MainWindow):
         print("--- %s filter time: seconds ---" % (time.time() - start_time))
 
         
-        print("Total # of points displayed: " + str(len(sorted_data["intensity_mean"])))
+        #print("Total # of points displayed: " + str(len(sorted_data["intensity_mean"])))
         
 
         start_time = time.time()
@@ -275,20 +284,16 @@ class Window(QMainWindow, Ui_MainWindow):
 
                 self.make_plot(data, freq_min, freq_max, True, start_time,fig,ax)
         
-        zooming = False
-
-        if not zooming:
-            ax.callbacks.connect('xlim_changed', on_lims_change)
-            ax.callbacks.connect('ylim_changed', on_lims_change)
+        ax.callbacks.connect('xlim_changed', on_lims_change)
+        ax.callbacks.connect('ylim_changed', on_lims_change)
 
 
         #so it doesn't get stuck, we don't show the plot instead exit right away
         plt.show()
         plt.pause(0.0001)
         plt.close()
-        print("--- %s plotting time: seconds ---" % (time.time() - start_time))
-
-
+        
+        
 def main():
 
     #set variables for testing
