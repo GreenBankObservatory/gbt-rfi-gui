@@ -27,7 +27,8 @@ def make_the_csv(rcvr):
 	scan_level = pd.DataFrame(
 				header_row.values(
 					"scan__frontend__name", "scan__polarization__name",
-					"scan__unit", "scan__session__name",  "scan__datetime"
+					"scan__unit", "scan__session__name",  "scan__datetime",
+					"scan__coordinates__azimuth", "scan__coordinates__elevation"
 				))
 
 	scan_level["scan__datetime"] = scan_level["scan__datetime"].apply(lambda x: x.isoformat())
@@ -36,7 +37,7 @@ def make_the_csv(rcvr):
 
 	# make a 2 column dataFrame for the data needed to plot
 	reading_level = pd.DataFrame(
-	            qs.values("scan__coordinates__azimuth", "scan__coordinates__elevation", "frequency", "intensity")
+	            qs.values("frequency", "intensity")
 	        )
 
 	df_merged = pd.concat([scan_level, reading_level], axis=1)
