@@ -30,23 +30,26 @@ def make_the_csv(rcvr):
 					"scan__unit", "scan__session__name",  "scan__datetime"
 				))
 
-	scan_level["scan__datetime"] = scan_level["scan__datetime"].dt.tz_localize(None).apply(lambda x: x.isoformat())
+	scan_level["scan__datetime"] = scan_level["scan__datetime"].apply(lambda x: x.isoformat())
 	scan_level.insert(0, "telescope", ["GBT"])
 	file_name = scan_level.iloc[0].scan__session__name
 
 	# make a 2 column dataFrame for the data needed to plot
 	reading_level = pd.DataFrame(
-	            qs.values("frequency", "intensity")
+	            qs.values("scan__coordinates__azimuth", "scan__coordinates__elevation", "frequency", "intensity")
 	        )
 
 	df_merged = pd.concat([scan_level, reading_level], axis=1)
 
 
-	headers = ["instrument", "receiver", "polarization", "intensity_unit", "scan_name", "scan_datetime", "frequency", "intensity"]
+	headers = ["instrument", "receiver", "polarization", "intensity_unit", "scan_name", "scan_datetime", "scan_az", "scan_el", "frequency", "intensity"]
 	df_merged.to_csv(file_name+".csv", index=False, sep=',', na_rep=' ', header=headers)
 	
 rcvrs = [i['frontend__name'] for i in Scan.objects.values('frontend__name').distinct()]
+rcvrs.remove("Rcvr_800")
+rcvrs.remove("Prime Focus 1")
 #rcvrs=["Rcvr1_2"]
+
 for rcvr in rcvrs:
 	print("Making file for: ", rcvr)
 	make_the_csv(rcvr)
