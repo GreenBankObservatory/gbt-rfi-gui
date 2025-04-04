@@ -29,8 +29,9 @@ def make_the_csv(rcvr):
 					"scan__frontend__name", "scan__polarization__name",
 					"scan__unit", "scan__session__name",  "scan__datetime"
 				))
+
+	scan_level["scan__datetime"] = scan_level["scan__datetime"].dt.tz_localize(None).apply(lambda x: x.isoformat())
 	scan_level.insert(0, "telescope", ["GBT"])
-	#scan_level = scan_level_pd.iloc[0]
 	file_name = scan_level.iloc[0].scan__session__name
 
 	# make a 2 column dataFrame for the data needed to plot
@@ -39,13 +40,13 @@ def make_the_csv(rcvr):
 	        )
 
 	df_merged = pd.concat([scan_level, reading_level], axis=1)
-	#df_merged = scan_level.append(reading_level, ignore_index=True)
 
 
-	headers = ["Instrument", "Receiver", "Polarization", "Inensity_Unit", "Scan_Name", "Scan_DateTime", "Frequency", "Intensity"]
+	headers = ["instrument", "receiver", "polarization", "intensity_unit", "scan_name", "scan_datetime", "frequency", "intensity"]
 	df_merged.to_csv(file_name+".csv", index=False, sep=',', na_rep=' ', header=headers)
-
+	
 rcvrs = [i['frontend__name'] for i in Scan.objects.values('frontend__name').distinct()]
+#rcvrs=["Rcvr1_2"]
 for rcvr in rcvrs:
 	print("Making file for: ", rcvr)
 	make_the_csv(rcvr)
