@@ -1,3 +1,38 @@
+[project]
+name = "gbt_rfi_gui"
+version = "1.1"
+description = "GBT RFI GUI"
+readme = "README.md"
+authors = [
+    { name = "Kathlyn Purcell", email = "kpurcell@nrao.edu" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "django-crispy-forms<2",
+    "django-debug-toolbar",
+    "django-environ",
+    "django-extensions<3",
+    "Django<4",
+    "ipdb",
+    "ipython",
+    "matplotlib",
+    "mysqlclient",
+    "pandas",
+    "pip-tools",
+    "plotly",
+    "psycopg2-binary",
+    "PyQt5",
+    "scipy",
+]
+url = "https://pypi.org/project/gbt-rfi-gui/"
+
+[project.scripts]
+gbt-rfi-gui = "gbt_rfi_gui.gbt_rfi_gui:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [tool]
 
 [tool.isort]
