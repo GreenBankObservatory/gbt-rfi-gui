@@ -23,6 +23,7 @@ dependencies = [
     "psycopg2-binary",
     "PyQt5",
     "scipy",
+    "tqdm"
 ]
 url = "https://pypi.org/project/gbt-rfi-gui/"
 

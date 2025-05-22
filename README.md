@@ -16,11 +16,8 @@ Included in this repo are several items: ingestion scripts, the gbt\_rfi\_gui an
     git clone https://github.com/GreenBankObservatory/gbt-rfi-gui.git
     cd gbt_rfi_query
     # make and source a new venv
-    ~gbosdd/pythonversions/3.9/bin/python -m venv <path/vevnName>
-    source <path/vevnName>/bin/activate
-    pip install -U pip setuptools wheel build
-    pip install -r requirements.txt
-    pip install -e .
+    uv sync --python /users/gbosdd/python/bin/python3.11
+    source .venv/bin/activate
 ```
 
 2.  Set up your environment to access the relevant databases
