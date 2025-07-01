@@ -255,7 +255,7 @@ class DoGraph(View):
 
             # Get the center of the frequency bins (for plotting)
             freqs = freq_bins[:-1] + 0.5 * np.diff(freq_bins)
-
+            unique_date_range["scan__datetime"] = unique_date_range["scan__datetime"].dt.tz_localize(None)
             df_rfi_grouped2 = unique_date_range.groupby(
                 [
                     pd.cut(unique_date_range.scan__datetime, date_bins),
